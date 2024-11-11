@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
-
+import {signupInput, signinInput} from "@sureshsaini/medium-common";
 export const userRouter = new Hono<{
     Bindings: {
         DATABASE_URL : string;
@@ -17,7 +17,14 @@ userRouter.post("/signup", async (c) => {
     }).$extends(withAccelerate());
   
     const body = await c.req.json(); // getting body in hono
-  
+    //Input validation via zod but with our own package on npm
+    const { success } = signupInput.safeParse(body);
+    if(!success) {
+      c.status(411);
+      return c.json({
+        messsage: "Inputs not correct"
+      })
+    }
     // user sign up and gets user id after user inserted into db
     try {
       const user = await prisma.user.create({
@@ -51,6 +58,13 @@ userRouter.post("/signup", async (c) => {
    }).$extends(withAccelerate()); // prisma's accelerate extension
   //  get back the body
    const body = await c.req.json();
+   const { success } = signinInput.safeParse(body);
+   if(!success) {
+    c.status(411);
+    return c.json({
+      message: "Inputs are not correct"
+    })
+   }
   //  matching if a user exist or not 
   try {
     const user = await prisma.user.findFirst({
